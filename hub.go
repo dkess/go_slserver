@@ -9,9 +9,10 @@ import (
 // have left.
 const KILL_TIME = time.Hour * time.Duration(24)
 
-func newHub() *Hub {
+func newHub(prefix string) *Hub {
 	return &Hub{
 		coopGames: make(map[string]*CoopGameEntry),
+		prefix:    prefix,
 
 		rng: rand.New(rand.NewSource(time.Now().UnixNano())),
 
@@ -58,12 +59,12 @@ func (h *Hub) run() {
 	for {
 		select {
 		case rCoop := <-h.registerCoop:
-			var gamename = generateGamename(h.rng)
+			var gamename = h.prefix + generateGamename(h.rng)
 			for {
 				if _, exists := h.coopGames[gamename]; !exists {
 					break
 				}
-				gamename = generateGamename(h.rng)
+				gamename = h.prefix + generateGamename(h.rng)
 			}
 			killTimer := time.AfterFunc(KILL_TIME, func() {
 				h.removeCoop <- gamename
@@ -107,6 +108,7 @@ type CoopGameEntry struct {
 
 type Hub struct {
 	coopGames map[string]*CoopGameEntry
+	prefix    string
 
 	rng *rand.Rand
 

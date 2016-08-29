@@ -39,7 +39,10 @@ func parse_url(url string) (bool, bool, bool, string) {
 
 func main() {
 	debugFlag := flag.Bool("debug", false, "Run the program in debug mode")
-	allowedHost := flag.String("host", "", "The HTTP host to allow")
+	allowedHostFlag := flag.String("host", "", "The HTTP host to allow")
+	prefixFlag := flag.String("prefix",
+		"",
+		"Text to prefix every game name on this server")
 
 	flag.Parse()
 
@@ -52,13 +55,13 @@ func main() {
 		}
 	}
 
-	if *allowedHost != "" {
+	if *allowedHostFlag != "" {
 		upgrader.CheckOrigin = func(r *http.Request) bool {
-			return r.Host == *allowedHost
+			return r.Host == *allowedHostFlag
 		}
 	}
 
-	hub := newHub()
+	hub := newHub(*prefixFlag)
 	go hub.run()
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
