@@ -39,6 +39,7 @@ func parse_url(url string) (bool, bool, bool, string) {
 
 func main() {
 	debugFlag := flag.Bool("debug", false, "Run the program in debug mode")
+	allowedHost := flag.String("host", "", "The HTTP host to allow")
 
 	flag.Parse()
 
@@ -46,8 +47,14 @@ func main() {
 	if *debugFlag {
 		fmt.Println("debug mode on")
 		// When in debug mode, allow connections form all origins
-		upgrader.CheckOrigin = func(_ *http.Request) bool {
+		upgrader.CheckOrigin = func(r *http.Request) bool {
 			return true
+		}
+	}
+
+	if *allowedHost != "" {
+		upgrader.CheckOrigin = func(r *http.Request) bool {
+			return r.Host == *allowedHost
 		}
 	}
 
