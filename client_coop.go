@@ -111,11 +111,9 @@ func wsCoopLoop(conn *websocket.Conn, game *CoopGame, pnum int) {
 			game.playerGiveup(pnum, true)
 		} else if bytes.Equal(p, []byte(":ungiveup")) {
 			game.playerGiveup(pnum, false)
-		} else if bytes.Equal(p, []byte("what")) {
-			break
 		}
 	}
-	panic("broke out of client loop")
+	panic("broke out of ws read loop")
 }
 
 // These functions, prefixed with the word "game," are called directly from
