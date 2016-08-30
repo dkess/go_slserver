@@ -43,6 +43,7 @@ func main() {
 	prefixFlag := flag.String("prefix",
 		"",
 		"Text to prefix every game name on this server")
+	addrFlag := flag.String("addr", ":8754", "The host and port to bind to")
 
 	flag.Parse()
 
@@ -112,7 +113,7 @@ func main() {
 	})
 
 	fmt.Println("server started")
-	err := http.ListenAndServe(":8754", nil)
+	err := http.ListenAndServe(*addrFlag, nil)
 	if err != nil {
 		log.Fatal("ListenAndServe: ", err)
 	}
