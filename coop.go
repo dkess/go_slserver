@@ -19,6 +19,8 @@ func newCoopGame(firstPlayer *CPlayer, wordsmap map[string]string) *CoopGame {
 		playerquit: make(chan *CPlayerQuitEvent),
 		attempt:    make(chan *CAttemptEvent),
 		giveup:     make(chan *CGiveupEvent),
+
+		snapshot: make(chan chan<- *CGameSnapshot),
 	}
 }
 
@@ -45,6 +47,12 @@ func (g *CoopGame) wordAttempt(pnum int, word string) {
 
 func (g *CoopGame) playerGiveup(pnum int, didGiveUp bool) {
 	g.giveup <- &CGiveupEvent{pnum: pnum, didGiveUp: didGiveUp}
+}
+
+func (g *CoopGame) getSnapshot() *CGameSnapshot {
+	s := make(chan *CGameSnapshot)
+	g.snapshot <- s
+	return <-s
 }
 
 func (g *CoopGame) run() {
@@ -77,6 +85,28 @@ func (g *CoopGame) run() {
 			gameSendGiveup(g, giveup.pnum, giveup.didGiveUp)
 
 			g.checkGiveupM()
+
+		case ss := <-g.snapshot:
+			players := make([]PlayerEntry, len(g.players))
+			for n, p := range g.players {
+				players[n] = PlayerEntry{name: p.name, present: p.send != nil}
+			}
+
+			var theWord string
+			guessed := 0
+			for w, g := range g.wordsmap {
+				if g != "" && g != "_" {
+					guessed++
+				}
+				if len(w) == 6 {
+					theWord = w
+				}
+			}
+			ss <- &CGameSnapshot{
+				players:      players,
+				word:         theWord,
+				wordsGuessed: guessed,
+			}
 		}
 	}
 }
@@ -145,6 +175,8 @@ type CoopGame struct {
 	playerquit chan *CPlayerQuitEvent
 	attempt    chan *CAttemptEvent
 	giveup     chan *CGiveupEvent
+
+	snapshot chan chan<- *CGameSnapshot
 }
 
 type CPlayer struct {
@@ -172,4 +204,15 @@ type CAttemptEvent struct {
 type CGiveupEvent struct {
 	pnum      int
 	didGiveUp bool
+}
+
+type PlayerEntry struct {
+	name    string
+	present bool
+}
+
+type CGameSnapshot struct {
+	players      []PlayerEntry
+	word         string
+	wordsGuessed int
 }

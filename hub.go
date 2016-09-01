@@ -2,6 +2,7 @@ package main
 
 import (
 	"math/rand"
+	"os"
 	"time"
 )
 
@@ -20,6 +21,9 @@ func newHub(prefix string) *Hub {
 		getCoop:      make(chan *GetCoopGame),
 		leaveCoop:    make(chan string),
 		removeCoop:   make(chan string),
+
+		getCSnapshots: make(chan chan<- []*CGameSnapshot),
+		phaseout:      make(chan bool),
 	}
 }
 
@@ -39,6 +43,16 @@ func (h *Hub) getCoopGame(name string) *CoopGame {
 
 func (h *Hub) leaveCoopGame(name string) {
 	h.leaveCoop <- name
+}
+
+func (h *Hub) getCoopSnapshots() []*CGameSnapshot {
+	s := make(chan []*CGameSnapshot)
+	h.getCSnapshots <- s
+	return <-s
+}
+
+func (h *Hub) phaseOutHub() {
+	h.phaseout <- true
 }
 
 // Generates a string with random lowercase alphanumeric chars
@@ -96,6 +110,24 @@ func (h *Hub) run() {
 
 		case kCoop := <-h.removeCoop:
 			delete(h.coopGames, kCoop)
+			if len(h.coopGames) == 0 {
+				os.Exit(0)
+			}
+
+		case gs := <-h.getCSnapshots:
+			snapshots := make([]*CGameSnapshot, len(h.coopGames))
+			n := 0
+			for _, ge := range h.coopGames {
+				snapshots[n] = ge.game.getSnapshot()
+			}
+
+			gs <- snapshots
+
+		case <-h.phaseout:
+			h.phasedOut = true
+			if len(h.coopGames) == 0 {
+				os.Exit(0)
+			}
 		}
 	}
 }
@@ -109,6 +141,7 @@ type CoopGameEntry struct {
 type Hub struct {
 	coopGames map[string]*CoopGameEntry
 	prefix    string
+	phasedOut bool
 
 	rng *rand.Rand
 
@@ -116,6 +149,9 @@ type Hub struct {
 	getCoop      chan *GetCoopGame
 	leaveCoop    chan string
 	removeCoop   chan string
+	phaseout     chan bool
+
+	getCSnapshots chan chan<- []*CGameSnapshot
 }
 
 type RegisterCoopGame struct {

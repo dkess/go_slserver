@@ -45,6 +45,7 @@ func main() {
 		"Text to prefix every game name on this server")
 	addrFlag := flag.String("addr", ":8754", "The host and port to bind to")
 
+	adminFlag := flag.String("admin-addr", "", "TCP socket for admin operations")
 	flag.Parse()
 
 	var upgrader = websocket.Upgrader{}
@@ -64,6 +65,10 @@ func main() {
 
 	hub := newHub(*prefixFlag)
 	go hub.run()
+
+	if *adminFlag != "" {
+		go adminRun(hub, *adminFlag)
+	}
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		fail, isCoop, isHost, data := parse_url(r.URL.Path)
