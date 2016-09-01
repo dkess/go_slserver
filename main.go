@@ -46,6 +46,11 @@ func main() {
 	addrFlag := flag.String("addr", ":8754", "The host and port to bind to")
 
 	adminFlag := flag.String("admin-addr", "", "TCP socket for admin operations")
+	haproxyAgentFlag := flag.String(
+		"haproxy-agent-addr",
+		"",
+		"TCP socket for haproxy check-agent")
+
 	flag.Parse()
 
 	var upgrader = websocket.Upgrader{}
@@ -68,6 +73,10 @@ func main() {
 
 	if *adminFlag != "" {
 		go adminRun(hub, *adminFlag)
+	}
+
+	if *haproxyAgentFlag != "" {
+		go haproxyRun(hub, *haproxyAgentFlag)
 	}
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
