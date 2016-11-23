@@ -3,7 +3,6 @@ package main
 import (
 	"flag"
 	"fmt"
-	"log"
 	"net/http"
 	"regexp"
 
@@ -89,7 +88,7 @@ func main() {
 		defer conn.Close()
 
 		if err != nil {
-			log.Println(err)
+			fmt.Println(err)
 			return
 		}
 
@@ -129,7 +128,7 @@ func main() {
 	fmt.Println("server started")
 	err := http.ListenAndServe(*addrFlag, nil)
 	if err != nil {
-		log.Fatal("ListenAndServe: ", err)
+		fmt.Println("ListenAndServe: %s", err.Error())
 	}
 }
 
