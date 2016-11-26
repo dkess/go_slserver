@@ -110,7 +110,7 @@ func (h *Hub) run() {
 
 		case kCoop := <-h.removeCoop:
 			delete(h.coopGames, kCoop)
-			if len(h.coopGames) == 0 {
+			if h.phasedOut && len(h.coopGames) == 0 {
 				os.Exit(0)
 			}
 
